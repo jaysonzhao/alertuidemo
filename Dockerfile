@@ -16,16 +16,17 @@ COPY app.py .
 # Production stage
 FROM registry.access.redhat.com/ubi9/python-39-minimal
 
+WORKDIR /app
+
 # Install pip in runtime image
 RUN pip install --no-cache-dir --upgrade pip
 
-WORKDIR /app
+# Copy requirements.txt and install dependencies
+COPY --from=builder /app/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy from builder (files owned by root)
-COPY --from=builder /app /app
-
-# OpenShift: Run as non-root user via Security Context (in deployment)
-# No chmod needed - permissions set at runtime by OpenShift
+# Copy application
+COPY --from=builder /app/app.py .
 
 # Expose port
 EXPOSE 8080
