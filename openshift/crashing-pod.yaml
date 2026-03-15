@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crash-script
+  namespace: alertdemo
+data:
+  crash.sh: |
+    #!/bin/sh
+    echo "Pod started, will crash in 10 seconds..."
+    sleep 10
+    echo "Crashing now!"
+    exit 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crashing-pod
+  namespace: alertdemo
+  labels:
+    app: crashing-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crashing-pod
+  template:
+    metadata:
+      labels:
+        app: crashing-pod
+    spec:
+      containers:
+        - name: crash
+          image: busybox:1.36
+          command: ["/bin/sh", "/scripts/crash.sh"]
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: crash-script
+            defaultMode: 0755
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+---
+# Alternative: Simple restart loop without configmap
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crashing-pod-simple
+  namespace: alertdemo
+  labels:
+    app: crashing-pod-simple
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crashing-pod-simple
+  template:
+    metadata:
+      labels:
+        app: crashing-pod-simple
+    spec:
+      containers:
+        - name: crash
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Crashing in 5s..." && sleep 5 && exit 1
+          restartPolicy: Always
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"

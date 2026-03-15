@@ -1,0 +1,61 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: alertdemo-pod-crash
+  labels:
+    prometheus: k8s
+    app: alert-webhook
+spec:
+  groups:
+    - name: alertdemo.pod.crash
+      rules:
+        # Alert for pods in CrashLoopBackOff
+        - alert: PodCrashLooping
+          expr: |
+            rate(kube_pod_container_status_restarts_total{namespace="alertdemo"}[5m]) > 0.1
+          for: 2m
+          labels:
+            severity: critical
+            namespace: alertdemo
+          annotations:
+            summary: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash looping"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been restart {{ $value }} times in the last 5 minutes"
+            runbook_url: "https://runbook.example.com/pod-crash-looping"
+
+        # Alert for pods that have been terminated unexpectedly
+        - alert: PodUnexpectedTermination
+          expr: |
+            kube_pod_status_phase{namespace="alertdemo", phase="Failed"} == 1
+            and
+            kube_pod_labels{label_pod_template_hash!=""} == 1
+          for: 1m
+          labels:
+            severity: warning
+            namespace: alertdemo
+          annotations:
+            summary: "Pod {{ $labels.pod }} in {{ $labels.namespace }} terminated unexpectedly"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is in Failed phase"
+
+        # Alert for pods not ready
+        - alert: PodNotReady
+          expr: |
+            kube_pod_status_ready{namespace="alertdemo", condition="true"} == 0
+          for: 5m
+          labels:
+            severity: warning
+            namespace: alertdemo
+          annotations:
+            summary: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is not ready"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 5 minutes"
+
+        # Alert for pod restarts in alertdemo namespace
+        - alert: PodHighRestartRate
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="alertdemo"}[15m]) > 3
+          labels:
+            severity: warning
+            namespace: alertdemo
+          annotations:
+            summary: "High restart rate for pod {{ $labels.pod }}"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $value }} times in the last 15 minutes"

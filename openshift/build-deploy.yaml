@@ -1,0 +1,149 @@
+---
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: alert-webhook-template
+  annotations:
+    description: "OpenShift Alert Webhook for Prometheus Alerts"
+objects:
+  # BuildConfig
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: alert-webhook
+      labels:
+        app: alert-webhook
+    spec:
+      source:
+        type: Git
+        git:
+          uri: ${GIT_REPO}
+          ref: ${GIT_REF}
+        contextDir: ${CONTEXT_DIR}
+      strategy:
+        type: Docker
+        dockerStrategy:
+          from:
+            kind: ImageStreamTag
+            name: ${BASE_IMAGE}
+            namespace: ${BASE_IMAGE_NS}
+      output:
+        to:
+          kind: ImageStreamTag
+          name: alert-webhook:latest
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChange: {}
+
+  # ImageStream
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: alert-webhook
+      labels:
+        app: alert-webhook
+    spec: {}
+
+  # Deployment
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: alert-webhook
+      labels:
+        app: alert-webhook
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: alert-webhook
+      template:
+        metadata:
+          labels:
+            app: alert-webhook
+        spec:
+          containers:
+            - name: webhook
+              image: alert-webhook:latest
+              imagePullPolicy: IfNotPresent
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              env:
+                - name: APP_HOST
+                  value: "0.0.0.0"
+                - name: APP_PORT
+                  value: "8080"
+                - name: APP_DEBUG
+                  value: "false"
+                - name: APP_USERNAME
+                  value: ${APP_USERNAME}
+                - name: APP_PASSWORD
+                  value: ${APP_PASSWORD}
+                - name: MAX_ALERTS
+                  value: "1000"
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 8080
+                initialDelaySeconds: 10
+                periodSeconds: 10
+              readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 8080
+                initialDelaySeconds: 5
+                periodSeconds: 5
+
+  # Service
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: alert-webhook
+      labels:
+        app: alert-webhook
+    spec:
+      ports:
+        - name: http
+          port: 8080
+          targetPort: 8080
+      selector:
+        app: alert-webhook
+
+  # Route
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: alert-webhook
+      labels:
+        app: alert-webhook
+    spec:
+      to:
+        kind: Service
+        name: alert-webhook
+      tls:
+        termination: edge
+      wildcardPolicy: None
+
+parameters:
+  - name: GIT_REPO
+    value: "https://github.com/your-repo/openshift-alert-webhook.git"
+    description: Git repository URL
+  - name: GIT_REF
+    value: "main"
+    description: Git branch/ref
+  - name: CONTEXT_DIR
+    value: "."
+    description: Context directory for build
+  - name: BASE_IMAGE
+    value: "python-39"
+    description: Base Python image
+  - name: BASE_IMAGE_NS
+    value: "openshift"
+    description: Namespace for base image
+  - name: APP_USERNAME
+    value: "admin"
+    description: Dashboard username
+  - name: APP_PASSWORD
+    value: "admin123"
+    description: Dashboard password

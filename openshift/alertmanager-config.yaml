@@ -1,0 +1,25 @@
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: alertdemo-webhook-config
+  namespace: alertdemo
+  labels:
+    app: alert-webhook
+spec:
+  receivers:
+    - name: webhook
+      webhookConfigs:
+        - url: http://alert-webhook.alertdemo.svc.cluster.local:8080/alertwebhook
+          sendResolved: true
+  route:
+    groupBy: ['alertname', 'namespace']
+    groupWait: 10s
+    groupInterval: 10s
+    matchers:
+      - namespace=alertdemo
+    receiver: webhook
+    repeatInterval: 12h
+---
+# Alternative: Patch existing Alertmanager (for cluster-wide config)
+# Run: oc patch alertmanager main -n openshift-monitoring --type merge -p '{"spec":{"route":{"receivers":[{"name":"webhook","webhookConfigs":[{"url":"http://alert-webhook.alertdemo.svc.cluster.local:8080/alertwebhook","sendResolved":true}]}]}}}'
