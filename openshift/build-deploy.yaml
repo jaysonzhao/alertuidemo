@@ -127,7 +127,7 @@ objects:
 
 parameters:
   - name: GIT_REPO
-    value: "https://github.com/your-repo/openshift-alert-webhook.git"
+    value: "https://github.com/jaysonzhao/alertuidemo.git"
     description: Git repository URL
   - name: GIT_REF
     value: "main"
