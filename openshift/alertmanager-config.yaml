@@ -1,24 +1,23 @@
----
+# Option 1: Using AlertmanagerConfig (for user-defined projects)
+# Apply to openshift-monitoring namespace
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
-  name: alertdemo-webhook-config
-  namespace: alertdemo
+  name: alertdemo-webhook
+  namespace: openshift-monitoring
   labels:
-    app: alert-webhook
+    alertmanager: main
 spec:
   receivers:
-    - name: webhook
+    - name: alertdemo-webhook
       webhookConfigs:
         - url: http://alert-webhook.alertdemo.svc.cluster.local:8080/alertwebhook
           sendResolved: true
   route:
-    groupBy:
-      - alertname
-      - namespace
+    groupBy: ['alertname', 'namespace']
     groupWait: 10s
     groupInterval: 10s
-    match:
+    matchLabels:
       namespace: alertdemo
-    receiver: webhook
+    receiver: alertdemo-webhook
     repeatInterval: 12h
