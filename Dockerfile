@@ -21,15 +21,11 @@ RUN pip install --no-cache-dir --upgrade pip
 
 WORKDIR /app
 
-# Copy from builder
+# Copy from builder (files owned by root)
 COPY --from=builder /app /app
 
-# OpenShift: Don't create user, let OpenShift assign random UID
-# The app will run as the user specified in the deployment security context
-# Or as the default user (typically uid 1001 or 1000)
-
-# Fix permissions for any group write (OpenShift requirement)
-RUN chmod -R g=u /app
+# OpenShift: Run as non-root user via Security Context (in deployment)
+# No chmod needed - permissions set at runtime by OpenShift
 
 # Expose port
 EXPOSE 8080

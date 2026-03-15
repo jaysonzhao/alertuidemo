@@ -17,10 +17,14 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1001
-        fsGroup: 1001
+        fsGroup: 1000
       containers:
         - name: webhook
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           image: alert-webhook:latest
           imagePullPolicy: IfNotPresent
           ports:
