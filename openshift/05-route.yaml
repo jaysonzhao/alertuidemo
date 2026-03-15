@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: alert-webhook
+  namespace: alertdemo
+  labels:
+    app: alert-webhook
+spec:
+  to:
+    kind: Service
+    name: alert-webhook
+  tls:
+    termination: edge
+  wildcardPolicy: None

@@ -1,0 +1,29 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: alert-webhook
+  namespace: alertdemo
+  labels:
+    app: alert-webhook
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/jaysonzhao/alertuidemo.git
+      ref: main
+    contextDir: .
+  strategy:
+    type: Docker
+    dockerStrategy:
+      from:
+        kind: ImageStreamTag
+        name: python-39:latest
+        namespace: openshift
+  output:
+    to:
+      kind: ImageStreamTag
+      name: alert-webhook:latest
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}

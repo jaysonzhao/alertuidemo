@@ -24,9 +24,12 @@ WORKDIR /app
 # Copy from builder
 COPY --from=builder /app /app
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# OpenShift: Don't create user, let OpenShift assign random UID
+# The app will run as the user specified in the deployment security context
+# Or as the default user (typically uid 1001 or 1000)
+
+# Fix permissions for any group write (OpenShift requirement)
+RUN chmod -R g=u /app
 
 # Expose port
 EXPOSE 8080
