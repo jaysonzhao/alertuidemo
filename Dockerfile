@@ -1,5 +1,5 @@
 # Build stage
-FROM registry.access.redhat.com/ubi9/python-39:latest AS builder
+FROM python:3.9-ubi9 AS builder
 
 WORKDIR /app
 
