@@ -1,4 +1,5 @@
 # Build stage
+# Test update
 FROM registry.access.redhat.com/ubi9/python-39:latest  AS builder
 
 WORKDIR /app
